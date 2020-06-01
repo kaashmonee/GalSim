@@ -1,0 +1,18 @@
+- Creates a "galaxy" modeled by a circular gaussian profile.
+- Convolve using Gaussian PSF
+    * Why is this convolution done?
+        - This is done to "blur" the image.
+        - This allows for a more realistic model of the galaxy.
+    * Adds Gaussian noise.
+        - Why is the noise added Gaussian?
+        - Want to simulate noise in a real image, but why Gaussian?
+        - And how is it Gaussian? Gaussian w.r.t what? The center?
+- Output was saved in output/demo1.fits.
+- Was able to view the demo1.fits file using ds9 on Ubuntu 20.04.
+- The demo1.yaml file provides information on the type of galaxy,
+  the psf to use (if not convolved with anything, effective PSF is delta function),
+- Image parameter specifies other information about the image like the pixel_scale,
+  noise, including the type of noise (default is Gaussian), and sigma (std. dev. of counts in each pixel)
+- Playing with noise parameter substantially increases the "graininess" of the image.
+- Increasing gal_flux makes the image a lot softer and smoother. 
+  Effectively increases the resolution.

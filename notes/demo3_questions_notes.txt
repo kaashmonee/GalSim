@@ -1,0 +1,25 @@
+Docstring:
+
+- Supposed to encompass main features of
+  an image from a ground based telescope.
+- Galaxy : sum of a bulge and a disk
+    * (Q) What are the technical definitions for a
+          bulge and a disk?
+    * each component represented by a sheared Sersic profile.
+    * (Q) What is a "sersic profile?"
+- PSF: contains atmospheric and optical components
+- Atomspheric component is a "Kolmogorov turbulent spectrum"
+    * (Q) What is a "Kolmogorov turbulent spectrum?" 
+- Optical component includes "defocus, coma, and astigmatism" 
+    * (Q) What are defocus, coma, and astigmatism?
+  as well as "obscuration from a secondary mirror."
+    * (Q) What is obscuration from a secondary mirror?
+- Adds poisson and gaussian read noise
+    * (Q) What is "read noise" and why add both kinds of noise?
+- Lets the pixels be "distorted in the sky"
+    * (Q) How does it do this?
+
+
+In the program:
+
+- 

@@ -1,0 +1,22 @@
+- Still creating an image of a galaxy, but this time
+  the galaxy has an exponential radial profile and is sheared.
+  (Q1) What is an "exponential radial profile?"
+  (Q2) How to shear a galaxy?
+- PSF -> circular "Moffat" profile.
+  (Q3) Why does the PSF use this "Moffat" profile?
+- Noise is drawn from a Poisson distribution using flux from the
+  object and the background sky to determine variance in each pixel.
+  (Q5) Why Poisson noise?
+- (Q4) What exactly is gal_flux?
+  (A4) Seems like a parameter that roughly corresponds to pixel density/resolution.
+- g1 and g2 are shear parameters.
+- Modifying g1/increasing g1 results in a horizontal shear.
+- Modifying g2/increasing g2 results in more of a diagonal shear, towards northeast corner.
+- Was able to increase psf_beta up to 6 and for values after 6, resulted in error:
+
+
+demo2.yaml:
+- g1 and g2 means to use "reduced shear definition"
+- (A3) A Moffat is a better approximation of ground based PSFs than Gaussians.
+- (A5) Poisson noise models how noise normally happens on CCD images. However, note that most of the noise comes from sky flux.
+
