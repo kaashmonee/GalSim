@@ -1,0 +1,49 @@
+ABSTRACT:
+- Nothing particularly useful here.
+
+Introduction:
+- Simulations in GREAT08 challenge (bridle et al) showed
+  impact of noise in a blind comparison of shear estimation
+  methods.
+- helped better characterize "noise biases..." not sure exactly
+  what those are
+
+Surface brightness profiles:
+
+- Exponential disk profile (page 4):
+    * provides a good description of the outer, star-forming
+      regions of spiral galaxies
+    * represented in GalSim by Exponential class
+
+- de Vaucouleurs profile:
+    * found to give a good fit to the light profiles of
+      elliptical galaxies and the central bulge regions
+      of galaxies that are still actively star-forming
+    * have very cuspy cores and broad wings
+        - cusp occurs around the size of the scale radius r0
+    * represented in GalSim by DeVaucouleurs class
+        - contains a truncation radius due to broadness of the
+          wings
+
+- sersic profile:
+    * generalization of both exponential and de Vaucouleurs
+      profiles
+    * represented in GalSim with the "sersic" class
+
+- Real Galaxies:
+    * borne from high resolution observations made from the HST
+      (hubble space telescope)
+    * used as direct models of light profiles for simulations
+    * represented in GalSim by the RealGalaxy class
+
+- Airy & obscured airy profile
+    * Diffraction patterns that we could add to a galaxy to
+      obtain more realistic effects
+    * complex aberrated wavefronts can be incident on a
+      circular pupil
+    * low order zernike polynomials map to low order aberrations
+      found commonly in telescopes
+
+- OpticalPSF class:
+    * (Q) Not a 100% sure exactly how this works...
+

@@ -1,0 +1,58 @@
+Main task:
+- compare timing for photon shooting vs. DFT branches for various types of profiles.
+(Q) What are these various types of profiles?
+
+Comments:
+- demo7 --- make full output, includes 4 realizations each for 5 different galaxy types
+- make a table for typical times per galaxy for each combination of galaxy + PSF
+- table -- has columns for:
+	* galaxy type, 
+	* PSF type, 
+	* typical time for DFT per galaxy, 
+	* typical time for photon shooting per galaxy
+- get typical times for
+	* galaxy type, PSF type, ratio of photon-shooting to DFT time
+
+- At what S/N does photon shooting become faster than FFT?
+- At low S/N, all galaxy types will be faster to drawShoot than to draw
+- At high S/N, it's the opposite
+- tabulate crossover point for a number of different profiles
+- pixel size + image size could also affect relative timing 
+	* start with Nyquist pixel size adn image size that is automatically chosen for the profile
+		(Q) What the heck is the Nyquist pixel size?
+		(Q) Include larger pixel scale values and both smaller and larger images to see 
+	* include some larger pixel scale values and both smaller and larger images to see whether
+	  and how much that affects relative timings.
+
+
+Possible way to go about resolving this issue:
+- add another method to drawImage called phot_auto that would work like phot in terms of noise 
+  profiles
+  	* (Q) where is drawImage written??
+	* (Q) How does phot work?
+	* (Q) What are these "noise profiles?"
+- Once a heuristic is developed, use the heuristic to automatically switch to ffts and add 
+  Poisson noise at the very end.
+
+
+Notse on May 21, 2018 by rmjarvis on how to proceed:
+- FFT timing should be proportional to the size of the K-space image.
+	- can check with obj.drawFFT_makeKImage
+	- returns a built k-space image along with a target real-space size (N)
+	- break it up so just the bounds are returned rather than teh image so we can check
+	  how many pixels it would be doing without the memory allocation
+- Photon timing going to be proportional to the number of photons that need to be shot
+- (normally the flux but not always)
+	* (Q) When is it not the flux?
+- Obtain t_fft/pixel and t_phot/photon for most classes
+- Once we have these ratios, get n_pixels and n_photons and multiply by scaling factors to figure
+  out which method will be faster
+
+rmandelb direction to proceed, May 30, 2019
+- For a single fixed galaxy and a PSF profile (e.g. a Sersic profile of a specific n, size, shape, 
+  convolved with a Kolmogorov of a particular FWHM and shape, write the code needed to find 
+  the quantities described by @rmjarvis. (t_fft/pixel and t_phot/photon)
+- Decide on a list of parameters to vary for galaxy and PSF profiles to execute code from (1)
+  in an informative set of scenarios
+- Decide how to sample the space (grid or something more complicated...what does this mean?)
+
