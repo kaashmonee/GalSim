@@ -79,47 +79,59 @@ def main(argv):
 
     # Obtaining setup start time to obtain fixed costs for setting up 
     # a particular type of profile. 
-    setup_start_t = time.time()
+
+    # Storing the setup times for each galaxy
+    gal_setup_times = []
 
     # Using an exponential galaxy profile
-    gal_exp = galsim.Exponential(half_light_radius=1, flux=gal_flux)
-    gal_gauss = galsim.Gaussian(half_light_radius=1, flux=gal_flux)
-    gal_devauc = galsim.DeVaucouleurs(half_light_radius=1, flux=gal_flux)
-    gal_sers = galsim.Sersic(half_light_radius=1, flux=gal_flux, n=2.5)
+    gal_exp, time_exp_gal = timeit(galsim.Exponential, logger) (half_light_radius=1, flux=gal_flux)
+    gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, logger) (half_light_radius=1, flux=gal_flux)
+    gal_devauc, time_devauc_gal = timeit(galsim.DeVaucouleurs, logger) (half_light_radius=1, flux=gal_flux)
+    gal_sers, time_sers_gal = timeit(galsim.Sersic, logger) (half_light_radius=1, flux=gal_flux, n=2.5)
+
+    # Adding all the times to the setup time list
+    gal_setup_times.extend([time_exp_gal, time_gauss_gal, time_devauc_gal, time_sers_gal])
 
     # Not shearing the galaxy for right now
     
     # Define the Moffat PSF
-    moffat_psf = galsim.Moffat(beta=psf_beta, flux=1., half_light_radius=psf_re)
+    moffat_psf, moffat_psf_time = timeit(galsim.Moffat, logger) (beta=psf_beta, flux=1., half_light_radius=psf_re)
 
     # final profile (these are galsim.Convolution objects)
     finals = []
+    convolution_times = []
+
+    # For each kind of galaxy, we time the convolution
     for gal in [gal_exp, gal_gauss, gal_devauc, gal_sers]:
-        cnvl_img = timeit(galsim.Convolve, logger)([gal, moffat_psf])
+        cnvl_img, time = timeit(galsim.Convolve, logger)([gal, moffat_psf])
+        convolution_times.append(time)
         finals.append(cnvl_img)
 
     # Obtaining the fixed setup costs for a given type of profile
     # Currently, we're only doing Exponential galaxy profiles with Moffat psfs
-    setup_end_t = time.time()
 
     # create the image
     images = []
+    draw_image_times = []
     for final in finals:
         image = galsim.ImageF(2*nx+2, ny, scale=pixel_scale)
         phot_image = image[galsim.BoundsI(nx+3, 2*nx+2, 1, ny)]
-        final.drawImage(phot_image, method="phot", rng=rng)
+
+
+        img, time = timeit(final.drawImage, logger) (phot_image, method="phot", rng=rng)
 
 def timeit(func, logger):
     """
-    Takes in a function fn and runs it on the arguments in *args.
-    Then outputs the time.
+    Takes in a function func and runs and times it on the arguments in *args
+    Then outputs the output of func(*args) and the time taken.
     """
     def timeit_wrapper(*args, **kwargs):
         tstart = time.time()
         res = func(*args, **kwargs)
         tend = time.time()
-        logger.info("Time taken: %f", tend-tstart)
-        return res
+        duration = tend-tstart
+        logger.info("Time taken: %f", duration)
+        return res, duration
 
     return timeit_wrapper
 
