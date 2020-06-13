@@ -1,0 +1,131 @@
+# Copyright (c) 2012-2019 by the GalSim developers team on GitHub
+# https://github.com/GalSim-developers
+#
+# This file is part of GalSim: The modular galaxy image simulation toolkit.
+# https://github.com/GalSim-developers/GalSim
+#
+# GalSim is free software: redistribution and use in source and binary forms,
+# with or without modification, are permitted provided that the following
+# conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions, and the disclaimer given in the accompanying LICENSE
+#    file.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions, and the disclaimer given in the documentation
+#    and/or other materials provided with the distribution.
+#
+"""
+Demo #1
+
+This is the first script in our tutorial about using GalSim in python scripts: examples/demo*.py.
+(This file is designed to be viewed in a window 100 characters wide.)
+
+Each of these demo*.py files are designed to be equivalent to the corresponding demo*.yaml file
+(or demo*.json -- found in the json directory).  If you are new to python, you should probably
+look at those files first as they will probably have a quicker learning curve for you.  Then you
+can look through these python scripts, which show how to do the same thing.  Of course, experienced
+pythonistas may prefer to start with these scripts and then look at the corresponding YAML files.
+
+To run this script, simply write:
+
+    python demo1.py
+
+
+This first script is about as simple as it gets.  We draw an image of a single galaxy convolved
+with a PSF and write it to disk.  We use a circular Gaussian profile for both the PSF and the
+galaxy, and add a constant level of Gaussian noise to the image.
+
+In each demo, we list the new features introduced in that demo file.  These will differ somewhat
+between the .py and .yaml (or .json) versions, since the two methods implement things in different
+ways.  (demo*.py are python scripts, while demo*.yaml and demo*.json are configuration files.)
+
+New features introduced in this demo:
+
+- obj = galsim.Gaussian(flux, sigma)
+- obj = galsim.Convolve([list of objects])
+- image = obj.drawImage(scale)
+- image.added_flux  (Only present after a drawImage command.)
+- noise = galsim.GaussianNoise(sigma)
+- image.addNoise(noise)
+- image.write(file_name)
+- image.FindAdaptiveMom()
+"""
+
+import sys
+import os
+import math
+import logging
+import galsim
+import time
+
+def main(argv):
+
+    # Initialize the logger
+    logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
+    logger = logging.getLogger("demo7")
+
+    random_seed = 1534225
+
+    gal_flux = 1.e5 # counts
+    rng = galsim.BaseDeviate(random_seed + 1)
+    gal_r0 = 2.7 # arcseconds
+    psf_beta = 5
+    pixel_scale = 0.2
+    psf_re = 1.0 # arcsec
+
+    nx = 64
+    ny = 64
+
+    # Obtaining setup start time to obtain fixed costs for setting up 
+    # a particular type of profile. 
+    setup_start_t = time.time()
+
+    # Using an exponential galaxy profile
+    gal_exp = galsim.Exponential(half_light_radius=1, flux=gal_flux)
+    gal_gauss = galsim.Gaussian(half_light_radius=1, flux=gal_flux)
+    gal_devauc = galsim.DeVaucouleurs(half_light_radius=1, flux=gal_flux)
+    gal_sers = galsim.Sersic(half_light_radius=1, flux=gal_flux, n=2.5)
+
+    # Not shearing the galaxy for right now
+    
+    # Define the Moffat PSF
+    moffat_psf = galsim.Moffat(beta=psf_beta, flux=1., half_light_radius=psf_re)
+
+    # final profile (these are galsim.Convolution objects)
+    finals = []
+    for gal in [gal_exp, gal_gauss, gal_devauc, gal_sers]:
+        cnvl_img = timeit(galsim.Convolve, logger)([gal, moffat_psf])
+        finals.append(cnvl_img)
+
+    # Obtaining the fixed setup costs for a given type of profile
+    # Currently, we're only doing Exponential galaxy profiles with Moffat psfs
+    setup_end_t = time.time()
+
+    # create the image
+    images = []
+    for final in finals:
+        image = galsim.ImageF(2*nx+2, ny, scale=pixel_scale)
+        phot_image = image[galsim.BoundsI(nx+3, 2*nx+2, 1, ny)]
+        final.drawImage(phot_image, method="phot", rng=rng)
+
+def timeit(func, logger):
+    """
+    Takes in a function fn and runs it on the arguments in *args.
+    Then outputs the time.
+    """
+    def timeit_wrapper(*args, **kwargs):
+        tstart = time.time()
+        res = func(*args, **kwargs)
+        tend = time.time()
+        logger.info("Time taken: %f", tend-tstart)
+        return res
+
+    return timeit_wrapper
+
+
+
+
+
+if __name__ == "__main__":
+    main(sys.argv)
