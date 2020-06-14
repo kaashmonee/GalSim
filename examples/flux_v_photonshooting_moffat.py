@@ -1,57 +1,3 @@
-# Copyright (c) 2012-2019 by the GalSim developers team on GitHub
-# https://github.com/GalSim-developers
-#
-# This file is part of GalSim: The modular galaxy image simulation toolkit.
-# https://github.com/GalSim-developers/GalSim
-#
-# GalSim is free software: redistribution and use in source and binary forms,
-# with or without modification, are permitted provided that the following
-# conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions, and the disclaimer given in the accompanying LICENSE
-#    file.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions, and the disclaimer given in the documentation
-#    and/or other materials provided with the distribution.
-#
-"""
-Demo #1
-
-This is the first script in our tutorial about using GalSim in python scripts: examples/demo*.py.
-(This file is designed to be viewed in a window 100 characters wide.)
-
-Each of these demo*.py files are designed to be equivalent to the corresponding demo*.yaml file
-(or demo*.json -- found in the json directory).  If you are new to python, you should probably
-look at those files first as they will probably have a quicker learning curve for you.  Then you
-can look through these python scripts, which show how to do the same thing.  Of course, experienced
-pythonistas may prefer to start with these scripts and then look at the corresponding YAML files.
-
-To run this script, simply write:
-
-    python demo1.py
-
-
-This first script is about as simple as it gets.  We draw an image of a single galaxy convolved
-with a PSF and write it to disk.  We use a circular Gaussian profile for both the PSF and the
-galaxy, and add a constant level of Gaussian noise to the image.
-
-In each demo, we list the new features introduced in that demo file.  These will differ somewhat
-between the .py and .yaml (or .json) versions, since the two methods implement things in different
-ways.  (demo*.py are python scripts, while demo*.yaml and demo*.json are configuration files.)
-
-New features introduced in this demo:
-
-- obj = galsim.Gaussian(flux, sigma)
-- obj = galsim.Convolve([list of objects])
-- image = obj.drawImage(scale)
-- image.added_flux  (Only present after a drawImage command.)
-- noise = galsim.GaussianNoise(sigma)
-- image.addNoise(noise)
-- image.write(file_name)
-- image.FindAdaptiveMom()
-"""
-
 import sys
 import os
 import math
@@ -104,6 +50,8 @@ def main(argv):
     # flux values that we are using. There are 4 columns because that is the number of 
     # galaxies.
     setup_times_vary_flux = np.zeros((num_gals, len(flux_scale)))
+
+    # Each index stores the 4 galaxies at different flux indices.
     gals_flux = []
 
     for i, gal_flux in enumerate(flux_scale):
@@ -152,20 +100,26 @@ def main(argv):
     # different fluxs. This is a 15x4 array where at each galaxy generated at a 
     # given flux level, we compute the time required to do a convolution with the Moffat PSF.
     convolution_times = np.zeros((num_gals, len(flux_scale)))
+    final_times = np.zeros((num_gals, len(flux_scale)))
 
     # For each kind of galaxy, we time the convolution
-    for flux_ind, flux_val in enumerate(flux_scale):
+    for gals_flux_ind, gals in enumerate(gals_flux):
+        finals_at_flux = []
+        logger.info("gals_flux_index: %d", gals_flux_ind)
+        flux_val = flux_scale[gals_flux_ind]
+        flux_ind = gals_flux_ind
 
-        for gals in gals_flux:
-            finals_at_flux = []
+        for gal_ind, gal in enumerate(gals):
 
-            for gal_ind, gal in enumerate(gals):
+            cnvl_img_final, time = timeit(galsim.Convolve, logger)([gal, moffat_psf])
+            convolution_times[gal_ind, flux_ind] = time
+            finals_at_flux.append(cnvl_img_final)
 
-                cnvl_img, time = timeit(galsim.Convolve, logger)([gal, moffat_psf])
-                convolution_times[gal_ind, flux_ind] = time
-                finals_at_flux.append(cnvl_img)
+            image = galsim.ImageF(2*nx+2, ny, scale=pixel_scale)
+            phot_image = image[galsim.BoundsI(nx+3, 2*nx+2, 1, ny)]
 
-        finals.append(finals_at_flux)
+            img, draw_img_time = timeit(cnvl_img_final.drawImage, logger) (phot_image, method="phot", rng=rng)
+            final_times[gal_ind, flux_ind] = draw_img_time
 
 
     # Plotting results...
@@ -183,24 +137,17 @@ def main(argv):
     # Obtaining the fixed setup costs for a given type of profile
     # Currently, we're only doing Exponential galaxy profiles with Moffat psfs
 
-    # create the image
-    images = []
-    draw_image_times = []
-    for final in finals:
-        image = galsim.ImageF(2*nx+2, ny, scale=pixel_scale)
-        phot_image = image[galsim.BoundsI(nx+3, 2*nx+2, 1, ny)]
 
-        images.append(image) # Not sure why I need this at the moment. Delete if unnecessary
-
-        img, time = timeit(final.drawImage, logger) (phot_image, method="phot", rng=rng)
-        draw_image_times.append(time)
-
-    plt.title("Time to Draw w/Photon Shooting vs. Galaxy")
-    plt.xlabel("Galaxy")
-    plt.ylabel("Time (Duration)")
-    plt.bar(galaxy_names, draw_image_times)
+    plt.title("Time to Draw w/Photon Shooting vs. Flux")
+    plt.xlabel("Flux")
+    plt.ylabel("Time to Draw Photon Shooting Image")
+    plt.plot(flux_scale, final_times[0], label=galaxy_names[0])
+    plt.plot(flux_scale, final_times[1], label=galaxy_names[1])
+    plt.plot(flux_scale, final_times[2], label=galaxy_names[2])
+    plt.plot(flux_scale, final_times[3], label=galaxy_names[3])
+    plt.legend()
     plt.show()
-
+    plt.figure()
 
 
 
@@ -214,7 +161,6 @@ def timeit(func, logger):
         res = func(*args, **kwargs)
         tend = time.time()
         duration = tend-tstart
-        logger.info("Time taken: %f", duration)
         return res, duration
 
     return timeit_wrapper
