@@ -58,8 +58,15 @@ import math
 import logging
 import galsim
 import time
+import matplotlib.pyplot as plt
+
 
 def main(argv):
+    """
+    Times that we're keeping track of:
+    gal_setup_times = [] => keeps track of galaxy setup times
+    gal
+    """
 
     # Initialize the logger
     logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
@@ -82,8 +89,8 @@ def main(argv):
 
     # Storing the setup times for each galaxy
     gal_setup_times = []
-
-    # Using an exponential galaxy profile
+    
+    # Using different galaxy profiles
     gal_exp, time_exp_gal = timeit(galsim.Exponential, logger) (half_light_radius=1, flux=gal_flux)
     gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, logger) (half_light_radius=1, flux=gal_flux)
     gal_devauc, time_devauc_gal = timeit(galsim.DeVaucouleurs, logger) (half_light_radius=1, flux=gal_flux)
@@ -91,6 +98,15 @@ def main(argv):
 
     # Adding all the times to the setup time list
     gal_setup_times.extend([time_exp_gal, time_gauss_gal, time_devauc_gal, time_sers_gal])
+
+    galaxy_names = ["Exponential", "Gaussian", "DeVaucouleurs", "Sersic"]
+    plt.title("Time vs. Galaxy")
+    plt.xlabel("Galaxy Type")
+    plt.ylabel("Time (Duration)")
+    plt.bar(galaxy_names, gal_setup_times)
+    plt.show()
+    plt.figure()
+
 
     # Not shearing the galaxy for right now
     
@@ -107,6 +123,13 @@ def main(argv):
         convolution_times.append(time)
         finals.append(cnvl_img)
 
+    plt.title("Time to Convolve with Moffat PSF vs. Galaxy")
+    plt.xlabel("Galaxy")
+    plt.ylabel("Time (Duration)")
+    plt.bar(galaxy_names, convolution_times)
+    plt.show()
+    plt.figure()
+
     # Obtaining the fixed setup costs for a given type of profile
     # Currently, we're only doing Exponential galaxy profiles with Moffat psfs
 
@@ -117,8 +140,19 @@ def main(argv):
         image = galsim.ImageF(2*nx+2, ny, scale=pixel_scale)
         phot_image = image[galsim.BoundsI(nx+3, 2*nx+2, 1, ny)]
 
+        images.append(image) # Not sure why I need this at the moment. Delete if unnecessary
 
         img, time = timeit(final.drawImage, logger) (phot_image, method="phot", rng=rng)
+        draw_image_times.append(time)
+
+    plt.title("Time to Draw w/Photon Shooting vs. Galaxy")
+    plt.xlabel("Galaxy")
+    plt.ylabel("Time (Duration)")
+    plt.bar(galaxy_names, draw_image_times)
+    plt.show()
+
+
+
 
 def timeit(func, logger):
     """
