@@ -105,7 +105,19 @@ def main(argv):
     # Define the Moffat PSF
     # Define other PSFs also
     
+    # Using example values specified in the documentation
+    # Defining lambda, r0, and telescope diameter 
+    lam = 700
+    diam = 3
+    r0 = 0.15 * (lam/500)**1.2 # meters
+
+    kolmogorov_psf, kolmogorov_psf_time = timeit(galsim.Kolmogorov) (lam=lam, r0=r0, scale_unit=galsim.arcsec)
+    vonkarman_psf, von_karman_psf_time = timeit(galsim.VonKarman) (lam=lam, r0=r0)
+    airy_psf, airy_psf_time = timeit(galsim.Airy) (lam=lam, diam=diam) 
     moffat_psf, moffat_psf_time = timeit(galsim.Moffat) (beta=psf_beta, flux=1., half_light_radius=psf_re)
+    optical_psf, optical_psf_time = timeit(galsim.OpticalPSF)(lam=lam, diam=diam)
+
+    cur_psf = moffat_psf
 
     # final profile (these are galsim.Convolution objects)
     finals = []
