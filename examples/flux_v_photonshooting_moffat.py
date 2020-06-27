@@ -54,14 +54,25 @@ def main(argv):
     # Each index stores the 4 galaxies at different flux indices.
     gals_flux = []
 
+    # Stores the random offsets introduced in generating the times for each iteration of the flux.
+    offsets = []
+
     for i, gal_flux in enumerate(flux_scale):
         # Storing the setup times for each galaxy
         
         # Using different galaxy profiles
-        gal_exp, time_exp_gal = timeit(galsim.Exponential, logger) (half_light_radius=1, flux=gal_flux)
-        gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, logger) (half_light_radius=1, flux=gal_flux)
-        gal_devauc, time_devauc_gal = timeit(galsim.DeVaucouleurs, logger) (half_light_radius=1, flux=gal_flux)
-        gal_sers, time_sers_gal = timeit(galsim.Sersic, logger) (half_light_radius=1, flux=gal_flux, n=2.5)
+        # Adding a random offset to the half_light_radius parameter to make sure that GalSim isn't 
+        # caching anything.
+        random_offset = np.random.random_sample() / 20 # generates a random number between [0, 0.05)
+        print("Random offset: ", random_offset)
+
+        gal_exp, time_exp_gal = timeit(galsim.Exponential, logger) (half_light_radius = 1 + random_offset , flux=gal_flux)
+        gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, logger) (half_light_radius = 1 + random_offset, flux=gal_flux)
+        gal_devauc, time_devauc_gal = timeit(galsim.DeVaucouleurs, logger) (half_light_radius = 1 + random_offset, flux=gal_flux)
+        gal_sers, time_sers_gal = timeit(galsim.Sersic, logger) (half_light_radius = 1 + random_offset, flux=gal_flux, n=2.5)
+
+        # Updating the offsets
+        offsets.append(random_offset)
 
         # Store the generated galaxy for each flux value
         gals_flux.append([gal_exp, gal_gauss, gal_devauc, gal_sers])
@@ -80,10 +91,14 @@ def main(argv):
     plt.title("Setup Time vs. Flux")
     plt.xlabel("Flux")
     plt.ylabel("Setup Time (s)")
-    plt.plot(flux_scale, setup_times_vary_flux[0], label=galaxy_names[0])
-    plt.plot(flux_scale, setup_times_vary_flux[1], label=galaxy_names[1])
-    plt.plot(flux_scale, setup_times_vary_flux[2], label=galaxy_names[2])
-    plt.plot(flux_scale, setup_times_vary_flux[3], label=galaxy_names[3])
+
+    for i in range(num_gals):
+        plt.plot(flux_scale, setup_times_vary_flux[i], label=galaxy_names[i])
+
+    # plt.plot(flux_scale, setup_times_vary_flux[0], label=galaxy_names[0])
+    # plt.plot(flux_scale, setup_times_vary_flux[1], label=galaxy_names[1])
+    # plt.plot(flux_scale, setup_times_vary_flux[2], label=galaxy_names[2])
+    # plt.plot(flux_scale, setup_times_vary_flux[3], label=galaxy_names[3])
     plt.legend()
     plt.show()
     plt.figure()
@@ -151,17 +166,30 @@ def main(argv):
 
 
 
-def timeit(func, logger):
+def timeit(func, logger, repeat:int = 1):
     """
     Takes in a function func and runs and times it on the arguments in *args
     Then outputs the output of func(*args) and the time taken.
+    If repeat is true, it repeats the routine and produces the average value
     """
+    if repeat == 0:
+        raise ValueError("repeat parameter cannot be 0")
+
     def timeit_wrapper(*args, **kwargs):
-        tstart = time.time()
-        res = func(*args, **kwargs)
-        tend = time.time()
-        duration = tend-tstart
-        return res, duration
+        average = 0
+
+        for _ in range(repeat):
+
+            tstart = time.time()
+            res = func(*args, **kwargs)
+            tend = time.time()
+            duration = tend-tstart
+            
+            average += duration
+
+        average /= repeat
+
+        return res, average
 
     return timeit_wrapper
 
