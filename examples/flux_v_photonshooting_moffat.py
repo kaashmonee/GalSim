@@ -63,13 +63,14 @@ def main(argv):
         # Using different galaxy profiles
         # Adding a random offset to the half_light_radius parameter to make sure that GalSim isn't 
         # caching anything.
-        random_offset = np.random.random_sample() / 20 # generates a random number between [0, 0.05)
-        print("Random offset: ", random_offset)
+        # random_offset = np.random.random_sample() / 20 # generates a random number between [0, 0.05)
+        random_offset = 0 
+        repeat = 100
 
-        gal_exp, time_exp_gal = timeit(galsim.Exponential, logger) (half_light_radius = 1 + random_offset , flux=gal_flux)
-        gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, logger) (half_light_radius = 1 + random_offset, flux=gal_flux)
-        gal_devauc, time_devauc_gal = timeit(galsim.DeVaucouleurs, logger) (half_light_radius = 1 + random_offset, flux=gal_flux)
-        gal_sers, time_sers_gal = timeit(galsim.Sersic, logger) (half_light_radius = 1 + random_offset, flux=gal_flux, n=2.5)
+        gal_exp, time_exp_gal = timeit(galsim.Exponential, repeat=repeat) (half_light_radius = 1 + random_offset , flux=gal_flux)
+        gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, repeat=repeat) (half_light_radius = 1 + random_offset, flux=gal_flux)
+        gal_devauc, time_devauc_gal = timeit(galsim.DeVaucouleurs, repeat=repeat) (half_light_radius = 1 + random_offset, flux=gal_flux)
+        gal_sers, time_sers_gal = timeit(galsim.Sersic, repeat=repeat) (half_light_radius = 1 + random_offset, flux=gal_flux, n=2.5)
 
         # Updating the offsets
         offsets.append(random_offset)
@@ -95,10 +96,6 @@ def main(argv):
     for i in range(num_gals):
         plt.plot(flux_scale, setup_times_vary_flux[i], label=galaxy_names[i])
 
-    # plt.plot(flux_scale, setup_times_vary_flux[0], label=galaxy_names[0])
-    # plt.plot(flux_scale, setup_times_vary_flux[1], label=galaxy_names[1])
-    # plt.plot(flux_scale, setup_times_vary_flux[2], label=galaxy_names[2])
-    # plt.plot(flux_scale, setup_times_vary_flux[3], label=galaxy_names[3])
     plt.legend()
     plt.show()
     plt.figure()
@@ -106,7 +103,9 @@ def main(argv):
     # Not shearing the galaxy for right now
     
     # Define the Moffat PSF
-    moffat_psf, moffat_psf_time = timeit(galsim.Moffat, logger) (beta=psf_beta, flux=1., half_light_radius=psf_re)
+    # Define other PSFs also
+    
+    moffat_psf, moffat_psf_time = timeit(galsim.Moffat) (beta=psf_beta, flux=1., half_light_radius=psf_re)
 
     # final profile (these are galsim.Convolution objects)
     finals = []
@@ -126,14 +125,14 @@ def main(argv):
 
         for gal_ind, gal in enumerate(gals):
 
-            cnvl_img_final, time = timeit(galsim.Convolve, logger)([gal, moffat_psf])
+            cnvl_img_final, time = timeit(galsim.Convolve)([gal, moffat_psf])
             convolution_times[gal_ind, flux_ind] = time
             finals_at_flux.append(cnvl_img_final)
 
             image = galsim.ImageF(2*nx+2, ny, scale=pixel_scale)
             phot_image = image[galsim.BoundsI(nx+3, 2*nx+2, 1, ny)]
 
-            img, draw_img_time = timeit(cnvl_img_final.drawImage, logger) (phot_image, method="phot", rng=rng)
+            img, draw_img_time = timeit(cnvl_img_final.drawImage) (phot_image, method="phot", rng=rng)
             final_times[gal_ind, flux_ind] = draw_img_time
 
 
@@ -141,10 +140,8 @@ def main(argv):
     plt.title("Time to Convolve with Moffat vs. Flux")
     plt.xlabel("Flux")
     plt.ylabel("Time for Convolution")
-    plt.plot(flux_scale, convolution_times[0], label=galaxy_names[0])
-    plt.plot(flux_scale, convolution_times[1], label=galaxy_names[1])
-    plt.plot(flux_scale, convolution_times[2], label=galaxy_names[2])
-    plt.plot(flux_scale, convolution_times[3], label=galaxy_names[3])
+    for i in range(num_gals):
+        plt.plot(flux_scale, convolution_times[i], label=galaxy_names[i])
     plt.legend()
     plt.show()
     plt.figure()
@@ -166,7 +163,7 @@ def main(argv):
 
 
 
-def timeit(func, logger, repeat:int = 1):
+def timeit(func, repeat:int = 1):
     """
     Takes in a function func and runs and times it on the arguments in *args
     Then outputs the output of func(*args) and the time taken.
