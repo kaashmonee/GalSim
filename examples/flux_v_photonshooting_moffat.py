@@ -31,8 +31,8 @@ def main(argv):
     nx = 64
     ny = 64
 
-    # Obtaining setup start time to obtain fixed costs for setting up 
-    # a particular type of profile. 
+    # Obtaining setup start time to obtain fixed costs for setting up
+    # a particular type of profile.
 
     num_gals = 4
 
@@ -47,7 +47,7 @@ def main(argv):
     # flux_scale = log_fluxs
 
     # An array to store fluxs. This array is 15x4, where 15 is the number
-    # flux values that we are using. There are 4 columns because that is the number of 
+    # flux values that we are using. There are 4 columns because that is the number of
     # galaxies.
     setup_times_vary_flux = np.zeros((num_gals, len(flux_scale)))
 
@@ -56,16 +56,16 @@ def main(argv):
 
     # Stores the random offsets introduced in generating the times for each iteration of the flux.
     offsets = []
+    repeat = 100
 
     for i, gal_flux in enumerate(flux_scale):
         # Storing the setup times for each galaxy
-        
+
         # Using different galaxy profiles
-        # Adding a random offset to the half_light_radius parameter to make sure that GalSim isn't 
+        # Adding a random offset to the half_light_radius parameter to make sure that GalSim isn't
         # caching anything.
         # random_offset = np.random.random_sample() / 20 # generates a random number between [0, 0.05)
-        random_offset = 0 
-        repeat = 100
+        random_offset = 0
 
         gal_exp, time_exp_gal = timeit(galsim.Exponential, repeat=repeat) (half_light_radius = 1 + random_offset , flux=gal_flux)
         gal_gauss, time_gauss_gal = timeit(galsim.Gaussian, repeat=repeat) (half_light_radius = 1 + random_offset, flux=gal_flux)
@@ -89,41 +89,39 @@ def main(argv):
     galaxy_names = ["Exponential", "Gaussian", "DeVaucouleurs", "Sersic"]
 
     # Plotting setup times
-    plt.title("Setup Time vs. Flux")
+    plt.title("Setup Time vs. Flux (Averaged over %d runs)" % repeat)
     plt.xlabel("Flux")
-    plt.ylabel("Setup Time (s)")
+    plt.ylabel(r"Setup Time ($\mu$s)")
 
     for i in range(num_gals):
-        plt.plot(flux_scale, setup_times_vary_flux[i], label=galaxy_names[i])
+        plt.plot(flux_scale, setup_times_vary_flux[i] * 10**6, label=galaxy_names[i])
 
     plt.legend()
     plt.show()
     plt.figure()
 
     # Not shearing the galaxy for right now
-    
-    # Define the Moffat PSF
-    # Define other PSFs also
-    
+
     # Using example values specified in the documentation
-    # Defining lambda, r0, and telescope diameter 
+    # Defining lambda, r0, and telescope diameter
     lam = 700
     diam = 3
     r0 = 0.15 * (lam/500)**1.2 # meters
-
+    
+    # Define different PSFs and use the cur_psf variable to perform our convolutions
     kolmogorov_psf, kolmogorov_psf_time = timeit(galsim.Kolmogorov) (lam=lam, r0=r0, scale_unit=galsim.arcsec)
     vonkarman_psf, von_karman_psf_time = timeit(galsim.VonKarman) (lam=lam, r0=r0)
-    airy_psf, airy_psf_time = timeit(galsim.Airy) (lam=lam, diam=diam) 
+    airy_psf, airy_psf_time = timeit(galsim.Airy) (lam=lam, diam=diam)
     moffat_psf, moffat_psf_time = timeit(galsim.Moffat) (beta=psf_beta, flux=1., half_light_radius=psf_re)
-    optical_psf, optical_psf_time = timeit(galsim.OpticalPSF)(lam=lam, diam=diam)
+    optical_psf, optical_psf_time = timeit(galsim.OpticalPSF) (lam=lam, diam=diam)
 
     cur_psf = moffat_psf
 
     # final profile (these are galsim.Convolution objects)
     finals = []
 
-    # Stores the time it takes to do a convolution with various galaxies at 
-    # different fluxs. This is a 15x4 array where at each galaxy generated at a 
+    # Stores the time it takes to do a convolution with various galaxies at
+    # different fluxs. This is a 15x4 array where at each galaxy generated at a
     # given flux level, we compute the time required to do a convolution with the Moffat PSF.
     convolution_times = np.zeros((num_gals, len(flux_scale)))
     final_times = np.zeros((num_gals, len(flux_scale)))
@@ -137,7 +135,7 @@ def main(argv):
 
         for gal_ind, gal in enumerate(gals):
 
-            cnvl_img_final, time = timeit(galsim.Convolve)([gal, moffat_psf])
+            cnvl_img_final, time = timeit(galsim.Convolve)([gal, cur_psf])
             convolution_times[gal_ind, flux_ind] = time
             finals_at_flux.append(cnvl_img_final)
 
@@ -165,10 +163,8 @@ def main(argv):
     plt.title("Time to Draw w/Photon Shooting vs. Flux")
     plt.xlabel("Flux")
     plt.ylabel("Time to Draw Photon Shooting Image")
-    plt.plot(flux_scale, final_times[0], label=galaxy_names[0])
-    plt.plot(flux_scale, final_times[1], label=galaxy_names[1])
-    plt.plot(flux_scale, final_times[2], label=galaxy_names[2])
-    plt.plot(flux_scale, final_times[3], label=galaxy_names[3])
+    for i in range(num_gals):
+        plt.plot(flux_scale, final_times[i], label=galaxy_names[i])
     plt.legend()
     plt.show()
     plt.figure()
@@ -193,7 +189,7 @@ def timeit(func, repeat:int = 1):
             res = func(*args, **kwargs)
             tend = time.time()
             duration = tend-tstart
-            
+
             average += duration
 
         average /= repeat
